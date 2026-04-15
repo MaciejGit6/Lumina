@@ -42,9 +42,13 @@ public class Lumina {
     }
 
     private static void run(String source) {
-        
-        System.out.println("Executing source: " + source);
-    }
+        Lexer lexer = new Lexer(source);
+        List<Token> tokens = lexer.scanTokens();
+
+        for (Token token : tokens) {
+            System.out.println(token);
+        }
+}
 
     public static void error(int line, String message) {
         report(line, "", message);
