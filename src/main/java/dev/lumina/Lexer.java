@@ -7,17 +7,16 @@ import java.util.Map;
 
 import static dev.lumina.TokenType.*;
 
-
-
 class Lexer {
-  private final String source;
-  private final List<Token> tokens = new ArrayList<>();
+    private final String source;
+    private final List<Token> tokens = new ArrayList<>();
 
-  private int start = 0;
-  private int current = 0;
-  private int line = 1;
+    private int start   = 0;
+    private int current = 0;
+    private int line    = 1;
 
-  private static final Map<String, TokenType> keywords;
+    // All reserved words. Anything not here is just a plain identifier.
+    private static final Map<String, TokenType> keywords;
     static {
         keywords = new HashMap<>();
         keywords.put("and",    AND);
@@ -38,29 +37,23 @@ class Lexer {
         keywords.put("while",  WHILE);
     }
 
-  Lexer(String source) {
-    this.source = source;
-  }
-
-  List<Token> scanTokens() {
-    while (!isAtEnd()) {
-      
-      start = current;
-      scanToken();
+    Lexer(String source) {
+        this.source = source;
     }
 
-    tokens.add(new Token(EOF, "", null, line));
-    return tokens;
-  }
+    List<Token> scanTokens() {
+        while (!isAtEnd()) {
+            start = current;
+            scanToken();
+        }
+        tokens.add(new Token(EOF, "", null, line));
+        return tokens;
+    }
 
-  private boolean isAtEnd() {
-    return current >= source.length();
-  }
-
-  private void scanToken() {
+    private void scanToken() {
         char c = advance();
         switch (c) {
-            
+            // Single-char tokens
             case '(': addToken(LEFT_PAREN);  break;
             case ')': addToken(RIGHT_PAREN); break;
             case '{': addToken(LEFT_BRACE);  break;
@@ -72,23 +65,23 @@ class Lexer {
             case ';': addToken(SEMICOLON);   break;
             case '*': addToken(STAR);        break;
 
-           
+            // One or two char tokens
             case '!': addToken(match('=') ? BANG_EQUAL    : BANG);    break;
             case '=': addToken(match('=') ? EQUAL_EQUAL   : EQUAL);   break;
             case '<': addToken(match('=') ? LESS_EQUAL    : LESS);    break;
             case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
 
-            
+           
             case '/':
                 if (match('/')) {
-                    
+                    // Single-line comment; eat until end of line
                     while (peek() != '\n' && !isAtEnd()) advance();
                 } else {
                     addToken(SLASH);
                 }
                 break;
 
-            
+        
             case ' ':
             case '\r':
             case '\t':
@@ -98,7 +91,7 @@ class Lexer {
                 line++;
                 break;
 
-            
+            // String literals
             case '"': string(); break;
 
             default:
@@ -107,12 +100,14 @@ class Lexer {
                 } else if (isAlpha(c)) {
                     identifier();
                 } else {
-                    
+                    // We still keep scanning after an error so we catch
+                    // all problems in one pass rather than stopping at the first one
                     Lumina.error(line, "Unexpected character: " + c);
                 }
                 break;
         }
     }
+
 
     private void string() {
         while (peek() != '"' && !isAtEnd()) {
@@ -125,9 +120,8 @@ class Lexer {
             return;
         }
 
-        advance(); 
+        advance(); // closing "
 
-        
         String value = source.substring(start + 1, current - 1);
         addToken(STRING, value);
     }
@@ -135,9 +129,9 @@ class Lexer {
     private void number() {
         while (isDigit(peek())) advance();
 
-        
+  
         if (peek() == '.' && isDigit(peekNext())) {
-            advance(); 
+            advance(); // consume the '.'
             while (isDigit(peek())) advance();
         }
 
@@ -148,7 +142,6 @@ class Lexer {
         while (isAlphaNumeric(peek())) advance();
 
         String text = source.substring(start, current);
-        
         TokenType type = keywords.getOrDefault(text, IDENTIFIER);
         addToken(type);
     }
@@ -165,18 +158,19 @@ class Lexer {
         return true;
     }
 
-    
+   
     private char peek() {
         if (isAtEnd()) return '\0';
         return source.charAt(current);
     }
 
-    
+    // Two characters of lookahead — only needed for numbers 1.5 vs 1
     private char peekNext() {
         if (current + 1 >= source.length()) return '\0';
         return source.charAt(current + 1);
     }
 
+    private boolean isAtEnd()            { return current >= source.length(); }
     private boolean isDigit(char c)      { return c >= '0' && c <= '9'; }
     private boolean isAlpha(char c)      { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
     private boolean isAlphaNumeric(char c){ return isAlpha(c) || isDigit(c); }
