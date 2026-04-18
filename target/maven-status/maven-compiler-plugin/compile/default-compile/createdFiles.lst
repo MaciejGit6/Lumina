@@ -13,6 +13,7 @@ dev/lumina/ast/AstPrinter.class
 dev/lumina/ast/Expr.class
 dev/lumina/ast/Stmt$If.class
 dev/lumina/ast/Expr$This.class
+dev/lumina/Interpreter.class
 dev/lumina/ast/Expr$Set.class
 dev/lumina/ast/Expr$Grouping.class
 dev/lumina/Parser$1.class
@@ -24,9 +25,11 @@ dev/lumina/ast/Expr$Literal.class
 dev/lumina/Parser.class
 dev/lumina/TokenType.class
 dev/lumina/error/ParseError.class
+dev/lumina/Interpreter$1.class
 dev/lumina/Lumina.class
 dev/lumina/ast/Stmt$Return.class
 dev/lumina/ast/Expr$Unary.class
+dev/lumina/error/RuntimeError.class
 dev/lumina/Lexer.class
 dev/lumina/ast/Stmt$Var.class
 dev/lumina/ast/Expr$Variable.class
