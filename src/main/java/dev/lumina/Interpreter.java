@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import dev.lumina.error.Return;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
@@ -81,8 +82,41 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     // Stubs for commits 8 and 9
-    @Override public Void visitClassStmt(Stmt.Class stmt)       { throw new UnsupportedOperationException("classes not yet implemented"); }
     @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        Object superclass = null;
+        if (stmt.superclass != null) {
+            superclass = evaluate(stmt.superclass);
+            if (!(superclass instanceof LuminaClass)) {
+                throw new RuntimeError(stmt.superclass.name, "Superclass must be a class.");
+            }
+        }
+
+        environment.define(stmt.name.lexeme, null);
+
+        // If there's a superclass, open a scope that exposes 'super'
+        if (stmt.superclass != null) {
+            environment = new Environment(environment);
+            environment.define("super", superclass);
+        }
+
+        Map<String, LuminaFunction> methods = new HashMap<>();
+        for (Stmt.Function method : stmt.methods) {
+            boolean isInitializer = method.name.lexeme.equals("init");
+            LuminaFunction function = new LuminaFunction(method, environment, isInitializer);
+            methods.put(method.name.lexeme, function);
+        }
+
+        LuminaClass klass = new LuminaClass(stmt.name.lexeme, (LuminaClass) superclass, methods);
+
+        // Pop the 'super' scope now that methods are compiled
+        if (stmt.superclass != null) {
+            environment = environment.enclosing;
+        }
+
+        environment.assign(stmt.name, klass);
+        return null;
+    }@Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         // Capture the current environment as the closure
         LuminaFunction function = new LuminaFunction(stmt, environment, false);
@@ -214,10 +248,41 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         return function.call(this, arguments);
     }
-    @Override public Object visitGetExpr(Expr.Get expr)       { throw new UnsupportedOperationException("get not yet implemented"); }
-    @Override public Object visitSetExpr(Expr.Set expr)       { throw new UnsupportedOperationException("set not yet implemented"); }
-    @Override public Object visitSuperExpr(Expr.Super expr)   { throw new UnsupportedOperationException("super not yet implemented"); }
-    @Override public Object visitThisExpr(Expr.This expr)     { throw new UnsupportedOperationException("this not yet implemented"); }
+    @Override
+        public Object visitGetExpr(Expr.Get expr) {
+            Object object = evaluate(expr.object);
+            if (object instanceof LuminaInstance) {
+                return ((LuminaInstance) object).get(expr.name);
+            }
+            throw new RuntimeError(expr.name, "Only instances have properties.");
+        }
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        Object object = evaluate(expr.object);
+        if (!(object instanceof LuminaInstance)) {
+            throw new RuntimeError(expr.name, "Only instances have fields.");
+        }
+        Object value = evaluate(expr.value);
+        ((LuminaInstance) object).set(expr.name, value);
+        return value;
+    }
+    @Override
+    public Object visitSuperExpr(Expr.Super expr) {
+        int distance = locals.get(expr);
+        LuminaClass superclass = (LuminaClass) environment.getAt(distance, "super");
+        // 'this' is always one scope inward from 'super'
+        LuminaInstance object = (LuminaInstance) environment.getAt(distance - 1, "this");
+
+        LuminaFunction method = superclass.findMethod(expr.method.lexeme);
+        if (method == null) {
+            throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.");
+        }
+        return method.bind(object);
+    }
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
+        return lookUpVariable(expr.keyword, expr);
+    }
 
     // -------------------------------------------------------------------------
     // Helpers
