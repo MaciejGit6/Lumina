@@ -1,4 +1,5 @@
 package dev.lumina.ast;
+import dev.lumina.Token;
 
 import dev.lumina.Token;
 import java.util.List;

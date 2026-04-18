@@ -2,6 +2,7 @@ package dev.lumina.ast;
 
 import dev.lumina.Token;
 import java.util.List;
+import dev.lumina.Token;
 
 
 public abstract class Expr {

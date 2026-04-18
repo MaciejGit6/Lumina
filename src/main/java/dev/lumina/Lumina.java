@@ -59,4 +59,14 @@ public class Lumina {
         System.err.println("[line " + line + "] Error" + where + ": " + message);
         hadError = true;
     }
+
+
+// Add alongside the existing error(int line, String message) method
+static void error(Token token, String message) {
+    if (token.type == TokenType.EOF) {
+        report(token.line, " at end", message);
+    } else {
+        report(token.line, " at '" + token.lexeme + "'", message);
+    }
+}
 }

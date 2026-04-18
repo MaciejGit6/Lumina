@@ -102,7 +102,7 @@ class Lexer {
                 } else {
                     // We still keep scanning after an error so we catch
                     // all problems in one pass rather than stopping at the first one
-                    Lumina.error(line, "Unexpected character: " + c);
+                    Lumina.error((int) line, "Unexpected character: " + c);
                 }
                 break;
         }
@@ -116,7 +116,7 @@ class Lexer {
         }
 
         if (isAtEnd()) {
-            Lumina.error(line, "Unterminated string.");
+            Lumina.error((int) line, "Unterminated string.");
             return;
         }
 
