@@ -1,4 +1,5 @@
 dev/lumina/ast/Stmt$Class.class
+dev/lumina/LuminaInstance.class
 dev/lumina/ast/Stmt$Block.class
 dev/lumina/ast/Expr$Super.class
 dev/lumina/ast/Expr$Logical.class
@@ -8,6 +9,7 @@ dev/lumina/Resolver.class
 dev/lumina/ast/Stmt$Visitor.class
 dev/lumina/ast/Expr$Binary.class
 dev/lumina/ast/Expr$Visitor.class
+dev/lumina/LuminaClass.class
 dev/lumina/ast/Stmt$Print.class
 dev/lumina/Resolver$FunctionType.class
 dev/lumina/ast/Expr$Get.class
@@ -18,6 +20,7 @@ dev/lumina/ast/Stmt$If.class
 dev/lumina/ast/Expr$This.class
 dev/lumina/Resolver$ClassType.class
 dev/lumina/Interpreter.class
+dev/lumina/LuminaCallable.class
 dev/lumina/ast/Expr$Set.class
 dev/lumina/ast/Expr$Grouping.class
 dev/lumina/Parser$1.class
@@ -26,6 +29,7 @@ dev/lumina/ast/Stmt$While.class
 dev/lumina/ast/Stmt.class
 dev/lumina/ast/Expr$Assign.class
 dev/lumina/ast/Expr$Literal.class
+dev/lumina/error/Return.class
 dev/lumina/Parser.class
 dev/lumina/TokenType.class
 dev/lumina/error/ParseError.class
@@ -35,6 +39,7 @@ dev/lumina/ast/Stmt$Return.class
 dev/lumina/ast/Expr$Unary.class
 dev/lumina/error/RuntimeError.class
 dev/lumina/Lexer.class
+dev/lumina/LuminaFunction.class
 dev/lumina/ast/Stmt$Var.class
 dev/lumina/ast/Expr$Variable.class
 dev/lumina/ast/Stmt$Expression.class

@@ -7,6 +7,8 @@ import dev.lumina.error.RuntimeError;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import dev.lumina.error.Return;
+import java.util.ArrayList;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
@@ -80,9 +82,19 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     // Stubs for commits 8 and 9
     @Override public Void visitClassStmt(Stmt.Class stmt)       { throw new UnsupportedOperationException("classes not yet implemented"); }
-    @Override public Void visitFunctionStmt(Stmt.Function stmt) { throw new UnsupportedOperationException("functions not yet implemented"); }
-    @Override public Void visitReturnStmt(Stmt.Return stmt)     { throw new UnsupportedOperationException("return not yet implemented"); }
-
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        // Capture the current environment as the closure
+        LuminaFunction function = new LuminaFunction(stmt, environment, false);
+        environment.define(stmt.name.lexeme, function);
+        return null;
+    }
+    @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        Object value = null;
+        if (stmt.value != null) value = evaluate(stmt.value);
+        throw new Return(value);
+    }
     // -------------------------------------------------------------------------
     // Expression visitors
     // -------------------------------------------------------------------------
@@ -181,7 +193,27 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     // Stubs for commits 8 and 9
-    @Override public Object visitCallExpr(Expr.Call expr)     { throw new UnsupportedOperationException("call not yet implemented"); }
+   @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        Object callee = evaluate(expr.callee);
+
+        List<Object> arguments = new ArrayList<>();
+        for (Expr argument : expr.arguments) {
+            arguments.add(evaluate(argument));
+        }
+
+        if (!(callee instanceof LuminaCallable)) {
+            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+        }
+
+        LuminaCallable function = (LuminaCallable) callee;
+        if (arguments.size() != function.arity()) {
+            throw new RuntimeError(expr.paren,
+                "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+        }
+
+        return function.call(this, arguments);
+    }
     @Override public Object visitGetExpr(Expr.Get expr)       { throw new UnsupportedOperationException("get not yet implemented"); }
     @Override public Object visitSetExpr(Expr.Set expr)       { throw new UnsupportedOperationException("set not yet implemented"); }
     @Override public Object visitSuperExpr(Expr.Super expr)   { throw new UnsupportedOperationException("super not yet implemented"); }
