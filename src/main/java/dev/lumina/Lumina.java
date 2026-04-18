@@ -10,6 +10,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import dev.lumina.error.RuntimeError;
 
 public class Lumina {
     static boolean hadError        = false;
@@ -54,6 +55,11 @@ public class Lumina {
 
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
+
+        if (hadError) return;
+
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
 
         if (hadError) return;
 
