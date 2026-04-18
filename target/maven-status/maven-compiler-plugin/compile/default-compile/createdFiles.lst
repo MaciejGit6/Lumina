@@ -9,6 +9,7 @@ dev/lumina/ast/Expr$Visitor.class
 dev/lumina/ast/Stmt$Print.class
 dev/lumina/ast/Expr$Get.class
 dev/lumina/Token.class
+dev/lumina/ast/AstPrinter.class
 dev/lumina/ast/Expr.class
 dev/lumina/ast/Stmt$If.class
 dev/lumina/ast/Expr$This.class

@@ -1,5 +1,7 @@
 package dev.lumina;
 
+import dev.lumina.ast.Stmt;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,41 +34,48 @@ public class Lumina {
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
 
-        for (;;) { 
+        for (;;) {
             System.out.print("> ");
             String line = reader.readLine();
             if (line == null) break;
             run(line);
-            hadError = false; 
+            hadError = false;
         }
     }
 
     private static void run(String source) {
-    Lexer lexer = new Lexer(source);
-    List<Token> tokens = lexer.scanTokens();
+        Lexer lexer = new Lexer(source);
+        List<Token> tokens = lexer.scanTokens();
 
-    // Temporary: dump tokens so we can verify the lexer works
-    for (Token token : tokens) {
-        System.out.println(token);
+        Parser parser = new Parser(tokens);
+        List<Stmt> statements = parser.parse();
+
+        // Don't try to print the tree if the parser already hit an error
+        if (hadError) return;
+
+        // Temporary: dump the token stream and parsed statements
+        // so we can eyeball correctness before the interpreter exists.
+        System.out.println("=== tokens ===");
+        for (Token token : tokens) {
+            System.out.println("  " + token);
+        }
+        System.out.println("=== parse ok, " + statements.size() + " statement(s) ===");
     }
-}
 
     public static void error(int line, String message) {
         report(line, "", message);
+    }
+
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, " at '" + token.lexeme + "'", message);
+        }
     }
 
     private static void report(int line, String where, String message) {
         System.err.println("[line " + line + "] Error" + where + ": " + message);
         hadError = true;
     }
-
-
-// Add alongside the existing error(int line, String message) method
-static void error(Token token, String message) {
-    if (token.type == TokenType.EOF) {
-        report(token.line, " at end", message);
-    } else {
-        report(token.line, " at '" + token.lexeme + "'", message);
-    }
-}
 }
