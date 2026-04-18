@@ -2,6 +2,7 @@ dev/lumina/ast/Stmt$Class.class
 dev/lumina/ast/Stmt$Block.class
 dev/lumina/ast/Expr$Super.class
 dev/lumina/ast/Expr$Logical.class
+dev/lumina/Environment.class
 dev/lumina/ast/Stmt$Function.class
 dev/lumina/ast/Stmt$Visitor.class
 dev/lumina/ast/Expr$Binary.class

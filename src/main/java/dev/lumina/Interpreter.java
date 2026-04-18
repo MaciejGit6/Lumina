@@ -4,11 +4,19 @@ import dev.lumina.ast.Expr;
 import dev.lumina.ast.Stmt;
 import dev.lumina.error.RuntimeError;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
-    // Entry point — runs a full program (list of statements).
+    // Global scope — lives for the entire run.
+    final Environment globals = new Environment();
+    // Current scope — changes as we enter/leave blocks.
+    private Environment environment = globals;
+    // Resolved variable depths from the Resolver (filled in Commit 7).
+    private final Map<Expr, Integer> locals = new HashMap<>();
+
     void interpret(List<Stmt> statements) {
         try {
             for (Stmt stmt : statements) {
@@ -36,14 +44,44 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
-    // Stubs for the rest — we'll fill these in over the next commits.
-    @Override public Void visitBlockStmt(Stmt.Block stmt)         { throw new UnsupportedOperationException("blocks not yet implemented"); }
-    @Override public Void visitClassStmt(Stmt.Class stmt)         { throw new UnsupportedOperationException("classes not yet implemented"); }
-    @Override public Void visitFunctionStmt(Stmt.Function stmt)   { throw new UnsupportedOperationException("functions not yet implemented"); }
-    @Override public Void visitIfStmt(Stmt.If stmt)               { throw new UnsupportedOperationException("if not yet implemented"); }
-    @Override public Void visitReturnStmt(Stmt.Return stmt)       { throw new UnsupportedOperationException("return not yet implemented"); }
-    @Override public Void visitVarStmt(Stmt.Var stmt)             { throw new UnsupportedOperationException("var not yet implemented"); }
-    @Override public Void visitWhileStmt(Stmt.While stmt)         { throw new UnsupportedOperationException("while not yet implemented"); }
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        Object value = null;
+        if (stmt.initializer != null) {
+            value = evaluate(stmt.initializer);
+        }
+        environment.define(stmt.name.lexeme, value);
+        return null;
+    }
+
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
+
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        if (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.body);
+        }
+        return null;
+    }
+
+    // Stubs for commits 8 and 9
+    @Override public Void visitClassStmt(Stmt.Class stmt)       { throw new UnsupportedOperationException("classes not yet implemented"); }
+    @Override public Void visitFunctionStmt(Stmt.Function stmt) { throw new UnsupportedOperationException("functions not yet implemented"); }
+    @Override public Void visitReturnStmt(Stmt.Return stmt)     { throw new UnsupportedOperationException("return not yet implemented"); }
 
     // -------------------------------------------------------------------------
     // Expression visitors
@@ -62,14 +100,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitUnaryExpr(Expr.Unary expr) {
         Object right = evaluate(expr.right);
-
         switch (expr.operator.type) {
             case BANG:  return !isTruthy(right);
             case MINUS:
                 checkNumberOperand(expr.operator, right);
                 return -(double) right;
-            default:
-                break;
+            default: break;
         }
         return null;
     }
@@ -78,9 +114,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Object visitBinaryExpr(Expr.Binary expr) {
         Object left  = evaluate(expr.left);
         Object right = evaluate(expr.right);
-
         switch (expr.operator.type) {
-            // Arithmetic
             case MINUS:
                 checkNumberOperands(expr.operator, left, right);
                 return (double) left - (double) right;
@@ -92,14 +126,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 checkNumberOperands(expr.operator, left, right);
                 return (double) left * (double) right;
             case PLUS:
-                // + works for both numbers and strings
                 if (left instanceof Double && right instanceof Double)
                     return (double) left + (double) right;
                 if (left instanceof String && right instanceof String)
                     return (String) left + (String) right;
                 throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
-
-            // Comparison
             case GREATER:
                 checkNumberOperands(expr.operator, left, right);
                 return (double) left > (double) right;
@@ -112,25 +143,49 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             case LESS_EQUAL:
                 checkNumberOperands(expr.operator, left, right);
                 return (double) left <= (double) right;
-
-            // Equality — works on any type, no coercion
             case BANG_EQUAL:  return !isEqual(left, right);
             case EQUAL_EQUAL: return  isEqual(left, right);
-
             default: break;
         }
         return null;
     }
 
-    // Stubs for expressions that need the environment (next commit).
-    @Override public Object visitAssignExpr(Expr.Assign expr)   { throw new UnsupportedOperationException("assign not yet implemented"); }
-    @Override public Object visitCallExpr(Expr.Call expr)       { throw new UnsupportedOperationException("call not yet implemented"); }
-    @Override public Object visitGetExpr(Expr.Get expr)         { throw new UnsupportedOperationException("get not yet implemented"); }
-    @Override public Object visitLogicalExpr(Expr.Logical expr) { throw new UnsupportedOperationException("logical not yet implemented"); }
-    @Override public Object visitSetExpr(Expr.Set expr)         { throw new UnsupportedOperationException("set not yet implemented"); }
-    @Override public Object visitSuperExpr(Expr.Super expr)     { throw new UnsupportedOperationException("super not yet implemented"); }
-    @Override public Object visitThisExpr(Expr.This expr)       { throw new UnsupportedOperationException("this not yet implemented"); }
-    @Override public Object visitVariableExpr(Expr.Variable expr){ throw new UnsupportedOperationException("variable not yet implemented"); }
+    @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        Object left = evaluate(expr.left);
+        // Short-circuit: for 'or', if left is truthy we're done.
+        // For 'and', if left is falsy we're done.
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruthy(left)) return left;
+        } else {
+            if (!isTruthy(left)) return left;
+        }
+        return evaluate(expr.right);
+    }
+
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return lookUpVariable(expr.name, expr);
+    }
+
+    @Override
+    public Object visitAssignExpr(Expr.Assign expr) {
+        Object value = evaluate(expr.value);
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value);
+        } else {
+            globals.assign(expr.name, value);
+        }
+        return value;
+    }
+
+    // Stubs for commits 8 and 9
+    @Override public Object visitCallExpr(Expr.Call expr)     { throw new UnsupportedOperationException("call not yet implemented"); }
+    @Override public Object visitGetExpr(Expr.Get expr)       { throw new UnsupportedOperationException("get not yet implemented"); }
+    @Override public Object visitSetExpr(Expr.Set expr)       { throw new UnsupportedOperationException("set not yet implemented"); }
+    @Override public Object visitSuperExpr(Expr.Super expr)   { throw new UnsupportedOperationException("super not yet implemented"); }
+    @Override public Object visitThisExpr(Expr.This expr)     { throw new UnsupportedOperationException("this not yet implemented"); }
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -144,9 +199,36 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
-    // nil and false are falsy; everything else is truthy.
+    void executeBlock(List<Stmt> statements, Environment env) {
+        Environment previous = this.environment;
+        try {
+            this.environment = env;
+            for (Stmt stmt : statements) {
+                execute(stmt);
+            }
+        } finally {
+            // Always restore the enclosing scope, even if an exception is thrown.
+            this.environment = previous;
+        }
+    }
+
+    // Called by the Resolver in Commit 7 to record how many hops up the
+    // scope chain a given variable reference needs to travel.
+    void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
+    }
+
+    private Object lookUpVariable(Token name, Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            return environment.getAt(distance, name.lexeme);
+        }
+        // Not resolved means it's a global.
+        return globals.get(name);
+    }
+
     private boolean isTruthy(Object object) {
-        if (object == null)           return false;
+        if (object == null)            return false;
         if (object instanceof Boolean) return (boolean) object;
         return true;
     }
@@ -167,8 +249,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         throw new RuntimeError(operator, "Operands must be numbers.");
     }
 
-    // Converts a runtime value back to a Lumina-style string.
-    // Strips the trailing ".0" from whole numbers so "2.0" prints as "2".
     String stringify(Object object) {
         if (object == null) return "nil";
         if (object instanceof Double) {
