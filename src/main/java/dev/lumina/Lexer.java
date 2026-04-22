@@ -15,6 +15,20 @@ class Lexer {
     private int current = 0;
     private int line    = 1;
 
+    private void blockComment() {
+        while (!isAtEnd()) {
+            if (peek() == '\n') line++;
+            if (peek() == '*' && peekNext() == '/') {
+                advance(); // consume '*'
+                advance(); // consume '/'
+                return;
+            }
+            advance();
+        }
+        // If we fall through here, the comment was never closed
+        Lumina.error(line, "Unterminated block comment.");
+    }
+
     // All reserved words. Anything not here is just a plain identifier.
     private static final Map<String, TokenType> keywords;
     static {
@@ -77,11 +91,13 @@ class Lexer {
                 if (match('/')) {
                     // Single-line comment; eat until end of line
                     while (peek() != '\n' && !isAtEnd()) advance();
+                } else if (match('*')) {
+                    // Block comment — scan until we find */
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
                 break;
-
         
             case ' ':
             case '\r':
