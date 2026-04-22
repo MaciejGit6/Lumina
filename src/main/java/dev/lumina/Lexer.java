@@ -127,20 +127,36 @@ class Lexer {
 
 
     private void string() {
+        StringBuilder value = new StringBuilder();
+
         while (peek() != '"' && !isAtEnd()) {
             if (peek() == '\n') line++;
-            advance();
+
+            if (peek() == '\\') {
+                advance(); // consume the backslash
+                switch (peek()) {
+                    case 'n':  value.append('\n'); break;
+                    case 't':  value.append('\t'); break;
+                    case 'r':  value.append('\r'); break;
+                    case '\\': value.append('\\'); break;
+                    case '"':  value.append('"');  break;
+                    default:
+                        Lumina.error(line, "Unknown escape sequence: \\" + peek());
+                        value.append(peek()); // recover gracefully
+                }
+                advance(); // consume the escaped char
+            } else {
+                value.append(advance());
+            }
         }
 
         if (isAtEnd()) {
-            Lumina.error((int) line, "Unterminated string.");
+            Lumina.error(line, "Unterminated string.");
             return;
         }
 
         advance(); // closing "
-
-        String value = source.substring(start + 1, current - 1);
-        addToken(STRING, value);
+        addToken(STRING, value.toString());
     }
 
     private void number() {
