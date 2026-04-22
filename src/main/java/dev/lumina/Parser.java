@@ -225,10 +225,10 @@ class Parser {
     private Expr assignment() {
         Expr expr = or();
 
+        // Plain assignment
         if (match(EQUAL)) {
             Token equals = previous();
-            Expr value = assignment(); // right-associative
-
+            Expr value = assignment();
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
@@ -236,11 +236,39 @@ class Parser {
                 Expr.Get get = (Expr.Get) expr;
                 return new Expr.Set(get.object, get.name, value);
             }
-
             error(equals, "Invalid assignment target.");
         }
 
+        // Compound assignment — desugar to x = x OP rhs
+        if (match(PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL)) {
+            Token op = previous();
+            Expr rhs = assignment();
+
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+
+                // Map += to +, -= to -, etc.
+                TokenType binaryOp = compoundToBinary(op.type);
+                Token syntheticOp  = new Token(binaryOp, op.lexeme, null, op.line);
+
+                Expr expanded = new Expr.Binary(expr, syntheticOp, rhs);
+                return new Expr.Assign(name, expanded);
+            }
+            error(op, "Invalid compound assignment target.");
+        }
+
         return expr;
+    }
+
+    // Helper used only by the compound-assignment branch above
+    private TokenType compoundToBinary(TokenType compound) {
+        switch (compound) {
+            case PLUS_EQUAL:  return TokenType.PLUS;
+            case MINUS_EQUAL: return TokenType.MINUS;
+            case STAR_EQUAL:  return TokenType.STAR;
+            case SLASH_EQUAL: return TokenType.SLASH;
+            default: throw new IllegalArgumentException("Not a compound op: " + compound);
+        }
     }
 
     private Expr or() {

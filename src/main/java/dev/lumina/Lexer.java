@@ -88,13 +88,16 @@ class Lexer {
             case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
 
            
+            case '+': addToken(match('=') ? PLUS_EQUAL  : PLUS);  break;
+            case '-': addToken(match('=') ? MINUS_EQUAL : MINUS); break;
+            case '*': addToken(match('=') ? STAR_EQUAL  : STAR);  break;
             case '/':
                 if (match('/')) {
-                    // Single-line comment; eat until end of line
                     while (peek() != '\n' && !isAtEnd()) advance();
                 } else if (match('*')) {
-                    // Block comment — scan until we find */
                     blockComment();
+                } else if (match('=')) {
+                    addToken(SLASH_EQUAL);
                 } else {
                     addToken(SLASH);
                 }
