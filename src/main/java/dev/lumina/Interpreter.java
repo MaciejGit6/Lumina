@@ -30,6 +30,60 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
+    Interpreter() {
+        // clock() — seconds since epoch as a double
+        globals.define("clock", new LuminaCallable() {
+            @Override public int arity() { return 0; }
+            @Override public Object call(Interpreter interpreter, java.util.List<Object> args) {
+                return (double) System.currentTimeMillis() / 1000.0;
+            }
+            @Override public String toString() { return "<native fn clock>"; }
+        });
+
+        // str(val) — stringify any Lumina value
+        globals.define("str", new LuminaCallable() {
+            @Override public int arity() { return 1; }
+            @Override public Object call(Interpreter interpreter, java.util.List<Object> args) {
+                return stringify(args.get(0));
+            }
+            @Override public String toString() { return "<native fn str>"; }
+        });
+
+        // num(val) — parse a string to a number, runtime error if it fails
+        globals.define("num", new LuminaCallable() {
+            @Override public int arity() { return 1; }
+            @Override public Object call(Interpreter interpreter, java.util.List<Object> args) {
+                Object arg = args.get(0);
+                if (arg instanceof Double) return arg;
+                if (arg instanceof String) {
+                    try { return Double.parseDouble((String) arg); }
+                    catch (NumberFormatException e) {
+                        throw new dev.lumina.error.RuntimeError(
+                            new Token(TokenType.IDENTIFIER, "num", null, 0),
+                            "Cannot convert '" + arg + "' to a number.");
+                    }
+                }
+                throw new dev.lumina.error.RuntimeError(
+                    new Token(TokenType.IDENTIFIER, "num", null, 0),
+                    "num() expects a string or number.");
+            }
+            @Override public String toString() { return "<native fn num>"; }
+        });
+
+        // len(val) — length of a string
+        globals.define("len", new LuminaCallable() {
+            @Override public int arity() { return 1; }
+            @Override public Object call(Interpreter interpreter, java.util.List<Object> args) {
+                Object arg = args.get(0);
+                if (arg instanceof String) return (double) ((String) arg).length();
+                throw new dev.lumina.error.RuntimeError(
+                    new Token(TokenType.IDENTIFIER, "len", null, 0),
+                    "len() expects a string.");
+            }
+            @Override public String toString() { return "<native fn len>"; }
+        });
+    }
+
     // -------------------------------------------------------------------------
     // Statement visitors
     // -------------------------------------------------------------------------
