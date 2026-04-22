@@ -64,6 +64,7 @@ class Lexer {
             case '+': addToken(PLUS);        break;
             case ';': addToken(SEMICOLON);   break;
             case '*': addToken(STAR);        break;
+            case '%': addToken(PERCENT); break;
 
             // One or two char tokens
             case '!': addToken(match('=') ? BANG_EQUAL    : BANG);    break;

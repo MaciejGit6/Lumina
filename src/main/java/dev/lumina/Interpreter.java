@@ -189,6 +189,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             case LESS_EQUAL:
                 checkNumberOperands(expr.operator, left, right);
                 return (double) left <= (double) right;
+            case PERCENT:
+                checkNumberOperands(expr.operator, left, right);
+                if ((double) right == 0) throw new RuntimeError(expr.operator, "Modulo by zero.");
+                return (double) left % (double) right;
             case BANG_EQUAL:  return !isEqual(left, right);
             case EQUAL_EQUAL: return  isEqual(left, right);
             default: break;
