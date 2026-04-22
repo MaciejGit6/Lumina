@@ -61,6 +61,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         define(stmt.name);
         return null;
     }
+    
+    @Override
+    public Void visitBreakStmt(Stmt.Break stmt) {
+        return null;
+    }
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {

@@ -16,6 +16,7 @@ public abstract class Stmt {
         R visitReturnStmt(Return stmt);
         R visitVarStmt(Var stmt);
         R visitWhileStmt(While stmt);
+        R visitBreakStmt(Stmt.Break stmt);
     }
 
     public abstract <R> R accept(Visitor<R> visitor);
@@ -81,6 +82,13 @@ public abstract class Stmt {
         @Override
         public <R> R accept(Visitor<R> visitor) {
             return visitor.visitFunctionStmt(this);
+        }
+    }
+
+    public static class Break extends Stmt {
+        @Override
+        public <R> R accept(Visitor<R> visitor) {
+            return visitor.visitBreakStmt(this);
         }
     }
 
