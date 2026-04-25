@@ -75,11 +75,8 @@ class Lexer {
             case '}': addToken(RIGHT_BRACE); break;
             case ',': addToken(COMMA);       break;
             case '.': addToken(DOT);         break;
-            case '-': addToken(MINUS);       break;
-            case '+': addToken(PLUS);        break;
             case ';': addToken(SEMICOLON);   break;
-            case '*': addToken(STAR);        break;
-            case '%': addToken(PERCENT); break;
+            case '%': addToken(PERCENT);     break;
 
             // One or two char tokens
             case '!': addToken(match('=') ? BANG_EQUAL    : BANG);    break;
@@ -87,7 +84,7 @@ class Lexer {
             case '<': addToken(match('=') ? LESS_EQUAL    : LESS);    break;
             case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
 
-           
+           //Operators that may have a trailing '='
             case '+': addToken(match('=') ? PLUS_EQUAL  : PLUS);  break;
             case '-': addToken(match('=') ? MINUS_EQUAL : MINUS); break;
             case '*': addToken(match('=') ? STAR_EQUAL  : STAR);  break;
