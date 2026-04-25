@@ -50,6 +50,7 @@ class Lexer {
         keywords.put("var",    VAR);
         keywords.put("while",  WHILE);
         keywords.put("break", BREAK);
+        keywords.put("continue", CONTINUE);
     }
 
     Lexer(String source) {

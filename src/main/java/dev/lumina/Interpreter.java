@@ -129,12 +129,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
-        try {
-            while (isTruthy(evaluate(stmt.condition))) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            try {
                 execute(stmt.body);
+            } catch (dev.lumina.error.Break ignored) {
+                break;
+            } catch (dev.lumina.error.Continue ignored) {
+                // skip the rest of the body; condition re-evaluates naturally
             }
-        } catch (dev.lumina.error.Break ignored) {
-            // break exits the nearest enclosing loop
         }
         return null;
     }
@@ -142,6 +144,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitBreakStmt(Stmt.Break stmt) {
         throw new dev.lumina.error.Break();
+    }
+
+    @Override
+    public Void visitContinueStmt(Stmt.Continue stmt) {
+        throw new dev.lumina.error.Continue();
     }
 
     // Stubs for commits 8 and 9

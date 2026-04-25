@@ -109,12 +109,19 @@ class Parser {
         if (match(WHILE))  return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
         if (match(BREAK)) return breakStatement();
+        if (match(BREAK))    return breakStatement();
+        if (match(CONTINUE)) return continueStatement(); 
         return expressionStatement();
     }
 
     private Stmt breakStatement() {
         consume(SEMICOLON, "Expected ';' after 'break'.");
         return new Stmt.Break();
+    }
+
+    private Stmt continueStatement() {
+        consume(SEMICOLON, "Expected ';' after 'continue'.");
+        return new Stmt.Continue();
     }
 
     // for loops are desugared into while loops — simpler interpreter that way
